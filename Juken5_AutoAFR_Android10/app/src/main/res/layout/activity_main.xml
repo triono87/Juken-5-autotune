@@ -2,7 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
 <LinearLayout android:orientation="vertical" android:padding="8dp" android:layout_width="match_parent" android:layout_height="wrap_content">
 <TextView android:text="JUKEN 5 — TARGET AFR AUTOTUNE" android:textSize="20sp" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-<TextView android:text="21 TPS × 61 RPM • Bluetooth SPP • Closed-loop MAP correction" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<TextView android:text="21 TPS × 61 RPM • Bluetooth SPP • Target AFR • 2602 packet preview" android:layout_width="match_parent" android:layout_height="wrap_content"/>
 <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
 <EditText android:id="@+id/rpm" android:hint="RPM" android:inputType="number" android:text="3000" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 <EditText android:id="@+id/tps" android:hint="TPS %" android:inputType="numberDecimal" android:text="20" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
@@ -11,7 +11,7 @@
 </LinearLayout>
 <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
 <EditText android:id="@+id/gain" android:hint="Gain" android:inputType="numberDecimal" android:text="0.50" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
-<EditText android:id="@+id/deadband" android:hint="Deadband %" android:inputType="numberDecimal" android:text="0.15" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<EditText android:id="@+id/deadband" android:hint="Deadband AFR" android:inputType="numberDecimal" android:text="0.15" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 <EditText android:id="@+id/maxcorr" android:hint="Max corr %" android:inputType="numberDecimal" android:text="5" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 </LinearLayout>
 <TextView android:id="@+id/selection" android:text="Sel: TPS 20% / 3000 rpm" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
@@ -25,6 +25,7 @@
 <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
 <Button android:id="@+id/connect" android:text="CONNECT" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 <Button android:id="@+id/disconnect" android:text="DISCONNECT" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id/preview2602" android:text="PREVIEW 2602" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 <Button android:id="@+id/export" android:text="EXPORT MAP" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 </LinearLayout>
 <TextView android:id="@+id/status" android:text="Bluetooth belum terhubung. Auto Tune mengubah MAP lokal." android:layout_width="match_parent" android:layout_height="wrap_content"/>
