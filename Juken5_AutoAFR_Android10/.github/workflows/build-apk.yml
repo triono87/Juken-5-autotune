@@ -6,6 +6,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Juken5_AutoAFR_Android10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -20,4 +23,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Juken5-Target-AFR-Autotune
-          path: app/build/outputs/apk/debug/*.apk
+          path: Juken5_AutoAFR_Android10/app/build/outputs/apk/debug/*.apk
