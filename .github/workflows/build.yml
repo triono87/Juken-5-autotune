@@ -1,36 +1,75 @@
 name: Build APK
-
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Juken5_AutoAFR_Android10
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup JDK
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          set -euxo pipefail
+          SDK_ROOT="$RUNNER_TEMP/android-sdk"
+          TOOLS_ROOT="$RUNNER_TEMP/cmdline-tools"
+          TOOLS_ZIP="$RUNNER_TEMP/cmdline-tools.zip"
 
-      - name: Grant execute permission
-        run: chmod +x gradlew
+          rm -rf "$SDK_ROOT" "$TOOLS_ROOT" "$TOOLS_ZIP"
+          mkdir -p "$SDK_ROOT/cmdline-tools" "$TOOLS_ROOT"
+
+          curl -fsSL --retry 5 --retry-all-errors             -o "$TOOLS_ZIP"             "https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip"
+
+          unzip -q "$TOOLS_ZIP" -d "$TOOLS_ROOT"
+          mv "$TOOLS_ROOT/cmdline-tools" "$SDK_ROOT/cmdline-tools/latest"
+
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
+
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+
+          yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT"             "platform-tools"             "platforms;android-35"             "build-tools;35.0.0"
+
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" --list | head -n 20
+
+      - name: Verify Android SDK
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          sdkmanager --version
+          test -d "$ANDROID_SDK_ROOT/platforms/android-35"
+          test -d "$ANDROID_SDK_ROOT/build-tools/35.0.0"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
 
       - name: Build APK
-        run: ./gradlew assembleDebug
+        run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Juken-5-autotune-APK
-          path: app/build/outputs/apk/debug/*.apk
+          name: Juken5-Target-AFR-Autotune
+          path: Juken5_AutoAFR_Android10/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
