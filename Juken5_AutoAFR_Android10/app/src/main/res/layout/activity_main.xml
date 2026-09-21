@@ -18,7 +18,7 @@
 <TextView android:id="@+id/stats" android:text="MAP 21×61" android:layout_width="match_parent" android:layout_height="wrap_content"/>
 <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
 <Button android:id="@+id/features" android:text="JUKEN 5 FITUR" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
-<Button android:id="@+id.ignition" android:text="IGNITION" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id/ignition" android:text="IGNITION" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 <Button android:id="@+id/injectorTiming" android:text="INJ TIMING" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 <Button android:id="@+id/limiter" android:text="LIMITER" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 <Button android:id="@+id/dwell" android:text="DWELL" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
