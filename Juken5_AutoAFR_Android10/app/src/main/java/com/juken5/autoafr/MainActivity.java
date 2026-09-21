@@ -63,6 +63,7 @@ public class MainActivity extends Activity {
         findViewById(R.id.packetLog).setOnClickListener(v->showPacketLog());
         findViewById(R.id.undo).setOnClickListener(v->undoLast());
         findViewById(R.id.history).setOnClickListener(v->showAutoHistory());
+        findViewById(R.id.exportHistory).setOnClickListener(v->exportAutoHistory());
 
         View.OnFocusChangeListener f=(v,has)->{if(!has) updateSelection();};
         rpm.setOnFocusChangeListener(f); tpsIn.setOnFocusChangeListener(f);
@@ -135,6 +136,15 @@ public class MainActivity extends Activity {
         if(autoHistory.length()==0) autoHistory.append("TIME,TPS,RPM,AFR,TARGET,ERROR,CORR,OLD_MAP,NEW_MAP\\n");
         autoHistory.append(line);
         if(autoHistory.length()>20000) autoHistory.delete(0,autoHistory.length()-20000);
+    }
+    void exportAutoHistory(){
+        if(autoHistory.length()==0){status.setText("Belum ada history Auto Tune untuk diekspor.");return;}
+        Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT); i.setType("text/csv");
+        i.putExtra(Intent.EXTRA_TITLE,"juken5_auto_tune_history.csv"); startActivityForResult(i,22);
+    }
+    void saveHistoryToUri(Uri uri){
+        try{OutputStream o=getContentResolver().openOutputStream(uri);o.write(autoHistory.toString().getBytes(StandardCharsets.UTF_8));o.close();status.setText("History Auto Tune berhasil diekspor.");}
+        catch(Exception e){status.setText("Export history gagal: "+e.getMessage());}
     }
     void showAutoHistory(){
         TextView v=new TextView(this); v.setText(autoHistory.length()==0?"Belum ada koreksi Auto Tune.":autoHistory.toString());
@@ -251,7 +261,7 @@ public class MainActivity extends Activity {
     }
 
     void logPacket(String dir,String data){
-        String clean=data.replace("\\r","\\\\r").replace("\\n","\\\\n");
+        String clean=data.replace("\r","\\r").replace("\n","\\n");
         if(clean.length()>600) clean=clean.substring(0,600)+"…";
         String line=new java.text.SimpleDateFormat("HH:mm:ss.SSS",Locale.US).format(new Date())+"  "+dir+"  "+clean+"\\n";
         packetLog.append(line);
@@ -288,7 +298,7 @@ public class MainActivity extends Activity {
     void openMap(){startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("text/*").addCategory(Intent.CATEGORY_OPENABLE),20);}
     @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
         super.onActivityResult(requestCode,resultCode,data);
-        if(resultCode==RESULT_OK&&data!=null){ if(requestCode==20) importCsv(data.getData()); else if(requestCode==21) saveMapToUri(data.getData()); }
+        if(resultCode==RESULT_OK&&data!=null){ if(requestCode==20) importCsv(data.getData()); else if(requestCode==21) saveMapToUri(data.getData()); else if(requestCode==22) saveHistoryToUri(data.getData()); }
     }
     void importCsv(Uri uri){
         try{
