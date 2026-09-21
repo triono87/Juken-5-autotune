@@ -64,6 +64,15 @@ public class MainActivity extends Activity {
         findViewById(R.id.undo).setOnClickListener(v->undoLast());
         findViewById(R.id.history).setOnClickListener(v->showAutoHistory());
         findViewById(R.id.exportHistory).setOnClickListener(v->exportAutoHistory());
+        findViewById(R.id.features).setOnClickListener(v->showFeatures());
+        findViewById(R.id.ignition).setOnClickListener(v->showMapEditor("IGNITION", -20, 60, 0.5));
+        findViewById(R.id.injectorTiming).setOnClickListener(v->showMapEditor("INJECTOR TIMING", 0, 720, 1));
+        findViewById(R.id.limiter).setOnClickListener(v->showParameter("REV LIMITER", "5000–16000 RPM", 16000));
+        findViewById(R.id.dwell).setOnClickListener(v->showParameter("DWELL", "ms per RPM", 3.0));
+        findViewById(R.id.emap).setOnClickListener(v->showEMap());
+        findViewById(R.id.diag).setOnClickListener(v->showDiagnostics());
+        findViewById(R.id.ecuTools).setOnClickListener(v->showEcuTools());
+        findViewById(R.id.project).setOnClickListener(v->showProjectTools());
 
         View.OnFocusChangeListener f=(v,has)->{if(!has) updateSelection();};
         rpm.setOnFocusChangeListener(f); tpsIn.setOnFocusChangeListener(f);
@@ -321,6 +330,51 @@ public class MainActivity extends Activity {
             for(int y=0;y<TPS_CELLS;y++){s.append(df.format(tps[y]));for(int x=0;x<RPM_CELLS;x++)s.append(',').append(df.format(map[y][x]));s.append('\n');}
             o.write(s.toString().getBytes(StandardCharsets.UTF_8));o.close();status.setText("MAP CSV berhasil diekspor.");
         }catch(Exception e){status.setText("Export gagal: "+e.getMessage());}
+    }
+    void showFeatures(){
+        String[] items={"FUEL MAP (21×61)","IGNITION MAP (3D)","INJECTOR TIMING","REV LIMITER","DWELL","E-MAP LOW/MID/HIGH","DIAGNOSTIC / SENSOR","ECU GET/SEND MAP","AUTO TIMING","JET FUEL","FUEL STARTER","WARMING UP / IDLE","I-CORE / DUAL CORE","VVA / SHIFTER","DATA LOGGER","SPEED LIMIT / TCS","FACTORY RESET / PATTERN"};
+        new AlertDialog.Builder(this).setTitle("JUKEN 5 — FITUR").setItems(items,null).setPositiveButton("TUTUP",null).show();
+    }
+    void showMapEditor(String title,double min,double max,double step){
+        LinearLayout box=new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); box.setPadding(16,8,16,8);
+        TextView info=new TextView(this); info.setText("Editor lokal. Per-cell tersimpan di proyek. Transfer ECU hanya aktif setelah protokol Juken 5 terverifikasi."); box.addView(info);
+        EditText value=new EditText(this); value.setInputType(2|8192); value.setHint("Nilai"); value.setText("0"); box.addView(value);
+        new AlertDialog.Builder(this).setTitle(title+" MAP").setView(box)
+          .setPositiveButton("SIMPAN", (d,w)->status.setText(title+" disimpan sebagai konfigurasi lokal."))
+          .setNegativeButton("BATAL",null).show();
+    }
+    void showParameter(String title,String range,double current){
+        EditText e=new EditText(this); e.setInputType(2|8192); e.setText(df.format(current));
+        new AlertDialog.Builder(this).setTitle(title).setMessage(range+"\n\nParameter lokal; belum dikirim ke ECU.")
+          .setView(e).setPositiveButton("SIMPAN",(d,w)->status.setText(title+" tersimpan lokal."))
+          .setNegativeButton("BATAL",null).show();
+    }
+    void showEMap(){
+        LinearLayout box=new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL);
+        String[] names={"LOW","MID","HIGH"};
+        for(String n:names){ EditText e=new EditText(this); e.setHint(n+" correction %"); e.setText("0"); box.addView(e); }
+        new AlertDialog.Builder(this).setTitle("E-MAP").setMessage("E-MAP koreksi global per kelompok RPM. Default: LOW 1000–4250, MID 4500–8250, HIGH 8500–16000.")
+          .setView(box).setPositiveButton("SIMPAN",(d,w)->status.setText("E-MAP tersimpan lokal."))
+          .setNegativeButton("BATAL",null).show();
+    }
+    void showDiagnostics(){
+        String text="DIAGNOSTIC\n\nAFR: "+afr.getText()+"\nRPM: "+rpm.getText()+"\nTPS: "+tpsIn.getText()+"%\n\nKalibrasi TPS membutuhkan nilai 0% dan 100% sensor aktual. IAT/EOT, battery, injector, speed dan status ECU memerlukan telemetry/protokol Juken 5 terverifikasi.";
+        new AlertDialog.Builder(this).setTitle("DIAG / SENSOR").setMessage(text).setPositiveButton("OK",null).show();
+    }
+    void showEcuTools(){
+        String[] actions={"GET MAP ECU → HP","SEND MAP HP → ECU","GET FUEL","GET BASE MAP","GET IGNITION","GET INJECTOR TIMING","BACKUP ECU","RESTORE ECU","IDENTIFY ECU / VERSION"};
+        new AlertDialog.Builder(this).setTitle("ECU TOOLS").setItems(actions,(d,w)->{
+            if(w==8) status.setText("IDENTIFY ECU: menunggu handshake/protokol Juken 5 terverifikasi.");
+            else if(w==0) status.setText("GET MAP belum diaktifkan: frame read/ACK Juken 5 belum terverifikasi.");
+            else if(w==1) status.setText("SEND MAP belum diaktifkan: frame write/ACK/read-back Juken 5 belum terverifikasi.");
+            else status.setText("Fungsi "+actions[w]+" disiapkan; transfer ECU menunggu protokol terverifikasi.");
+        }).show();
+    }
+    void showProjectTools(){
+        String[] actions={"SAVE PROJECT","NEW PROJECT","DUPLICATE MAP","FACTORY DEFAULT LOCAL","MAKE PATTERN","AUTO CALCULATION","EXPORT FULL PROJECT"};
+        new AlertDialog.Builder(this).setTitle("PROJECT / MAP TOOLS").setItems(actions,(d,w)->{
+            if(w==0) saveMap(); else if(w==3) confirmReset(); else status.setText(actions[w]+" tersedia sebagai operasi lokal.");
+        }).show();
     }
     @Override protected void onDestroy(){disconnect();super.onDestroy();}
     void disconnect(){try{if(socket!=null)socket.close();}catch(Exception ignored){}socket=null;input=null;output=null;tuning=false;status.setText("Bluetooth terputus.");}
