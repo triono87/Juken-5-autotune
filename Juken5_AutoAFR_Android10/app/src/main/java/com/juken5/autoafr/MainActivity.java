@@ -25,6 +25,7 @@ public class MainActivity extends Activity {
     EditText rpm,tpsIn,afr,target,gain,deadband,maxcorr;
     TextView status,live,selection,stats;
     StringBuilder packetLog=new StringBuilder();
+    StringBuilder autoHistory=new StringBuilder();
     final ArrayDeque<String> undoHistory=new ArrayDeque<>();
     TableLayout table;
     boolean tuning=false;
@@ -61,6 +62,7 @@ public class MainActivity extends Activity {
         findViewById(R.id.restore).setOnClickListener(v->restoreMap());
         findViewById(R.id.packetLog).setOnClickListener(v->showPacketLog());
         findViewById(R.id.undo).setOnClickListener(v->undoLast());
+        findViewById(R.id.history).setOnClickListener(v->showAutoHistory());
 
         View.OnFocusChangeListener f=(v,has)->{if(!has) updateSelection();};
         rpm.setOnFocusChangeListener(f); tpsIn.setOnFocusChangeListener(f);
@@ -117,12 +119,28 @@ public class MainActivity extends Activity {
         double corr=(ta>0?err/ta*100:0)*g;
         corr=Math.max(-max,Math.min(max,corr));
         double oldValue=map[y][x];
-        map[y][x]=Math.max(50,Math.min(150,map[y][x]*(1+corr/100)));
+        double newValue=Math.max(50,Math.min(150,map[y][x]*(1+corr/100)));
+        map[y][x]=newValue;
+        logAutoCorrection(y,x,a,ta,err,corr,oldValue,newValue);
         pushUndo(y,x,oldValue);
         samples[y][x]++;
         live.setText("LIVE AFR "+df.format(a)+"  TARGET "+df.format(ta)+"  CORR "+df.format(corr)+"%");
         status.setText("Cell TPS "+df.format(tps[y])+" / "+rpms[x]+" → "+df.format(map[y][x])+"%");
         updateSelection(); renderTable(); updateStats(); saveMap();
+    }
+
+    void logAutoCorrection(int y,int x,double actual,double targetAfr,double err,double corr,double oldValue,double newValue){
+        String line=new java.text.SimpleDateFormat("HH:mm:ss",Locale.US).format(new Date())
+            + ","+df.format(tps[y])+","+rpms[x]+","+df.format(actual)+","+df.format(targetAfr)+","+df.format(err)+","+df.format(corr)+","+df.format(oldValue)+","+df.format(newValue)+"\\n";
+        if(autoHistory.length()==0) autoHistory.append("TIME,TPS,RPM,AFR,TARGET,ERROR,CORR,OLD_MAP,NEW_MAP\\n");
+        autoHistory.append(line);
+        if(autoHistory.length()>20000) autoHistory.delete(0,autoHistory.length()-20000);
+    }
+    void showAutoHistory(){
+        TextView v=new TextView(this); v.setText(autoHistory.length()==0?"Belum ada koreksi Auto Tune.":autoHistory.toString());
+        v.setTextIsSelectable(true); v.setTextSize(11); v.setPadding(12,12,12,12);
+        new AlertDialog.Builder(this).setTitle("AUTO TUNE HISTORY").setView(v)
+            .setNegativeButton("TUTUP",null).setNeutralButton("CLEAR",(d,w)->{autoHistory.setLength(0);status.setText("History Auto Tune dihapus.");}).show();
     }
 
     void renderTable(){
