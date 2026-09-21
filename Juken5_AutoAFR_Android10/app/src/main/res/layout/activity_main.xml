@@ -2,7 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
 <LinearLayout android:orientation="vertical" android:padding="6dp" android:layout_width="match_parent" android:layout_height="wrap_content">
 <TextView android:text="JUKEN 5 — TARGET AFR AUTOTUNE" android:textSize="20sp" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-<TextView android:text="21 TPS × 61 RPM • editor cell • Bluetooth SPP • Auto Tune • Import/Export" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<TextView android:text="JUKEN 5 • FUEL • TIMING • INJECTOR • LIMIT • E-MAP • DIAG • AUTO TUNE • BLUETOOTH" android:layout_width="match_parent" android:layout_height="wrap_content"/>
 <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
 <EditText android:id="@+id/rpm" android:hint="RPM" android:inputType="number" android:text="3000" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 <EditText android:id="@+id/tps" android:hint="TPS %" android:inputType="numberDecimal" android:text="20" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
@@ -16,6 +16,19 @@
 </LinearLayout>
 <TextView android:id="@+id/selection" android:text="CELL: TPS 20% / RPM 3000" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
 <TextView android:id="@+id/stats" android:text="MAP 21×61" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
+<Button android:id="@+id/features" android:text="JUKEN 5 FITUR" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id.ignition" android:text="IGNITION" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id/injectorTiming" android:text="INJ TIMING" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id/limiter" android:text="LIMITER" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id/dwell" android:text="DWELL" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+</LinearLayout>
+<LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
+<Button android:id="@+id/emap" android:text="E-MAP" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id/diag" android:text="DIAG" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id/ecuTools" android:text="ECU TOOLS" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id/project" android:text="PROJECT" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+</LinearLayout>
 <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
 <Button android:id="@+id/autoTuneStart" android:text="START AUTO TUNE" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 <Button android:id="@+id/autoTuneStop" android:text="STOP" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
