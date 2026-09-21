@@ -19,6 +19,8 @@ public class MainActivity extends Activity {
     static final String SPP="00001101-0000-1000-8000-00805F9B34FB";
     final int[] rpms=new int[RPM_CELLS];
     final double[] tps=new double[TPS_CELLS];
+    final int[] tpsBp={0,2,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,100};
+    boolean readingFuel=false; int readRow=0; final double[][] ignitionMap=new double[TPS_CELLS][31]; final double[][] injectorMap=new double[TPS_CELLS][RPM_CELLS];
     final double[][] map=new double[TPS_CELLS][RPM_CELLS];
     final int[][] samples=new int[TPS_CELLS][RPM_CELLS];
 
@@ -79,7 +81,7 @@ public class MainActivity extends Activity {
         updateStats();
     }
 
-    void initAxes(){for(int i=0;i<RPM_CELLS;i++)rpms[i]=i*250;for(int i=0;i<TPS_CELLS;i++)tps[i]=i*5.0;}
+    void initAxes(){for(int i=0;i<RPM_CELLS;i++)rpms[i]=i*250;for(int i=0;i<TPS_CELLS;i++)tps[i]=tpsBp[i];}
 
     void defaultMap(){for(int y=0;y<TPS_CELLS;y++)for(int x=0;x<RPM_CELLS;x++){map[y][x]=100; samples[y][x]=0;}}
     void loadMap(){
@@ -218,6 +220,7 @@ public class MainActivity extends Activity {
                 socket=d.createRfcommSocketToServiceRecord(UUID.fromString(SPP));socket.connect();
                 input=socket.getInputStream();output=socket.getOutputStream();
                 runOnUiThread(()->status.setText("Bluetooth TERHUBUNG: "+d.getName()));
+                try{output.write("160A\\r\\n".getBytes(StandardCharsets.US_ASCII));output.flush();logPacket("TX","160A\\r\\n");}catch(Exception ignored){}
                 rx=new Thread(this::readLoop);rx.start();
             }catch(Exception e){runOnUiThread(()->status.setText("Gagal Bluetooth: "+e.getMessage()));}
         }).start();
@@ -233,6 +236,24 @@ public class MainActivity extends Activity {
     }
     void parseTelemetry(String s){
         try{
+            if(s.toUpperCase(Locale.US).startsWith("A603;")){
+                String[] p=s.trim().split(";");
+                if(p.length>=13){
+                    int tr=Integer.parseInt(p[1]); int rr=Integer.parseInt(p[4]);
+                    double ba=Double.parseDouble(p[2]), eo=Double.parseDouble(p[5])/10.0, fuel=Double.parseDouble(p[6]);
+                    double aa=Double.parseDouble(p[7]), bm=Double.parseDouble(p[8]), inj=Double.parseDouble(p[9]), ig=Double.parseDouble(p[10])/10.0;
+                    double ma=Double.parseDouble(p[11]), ia=Double.parseDouble(p[12])/10.0;
+                    final int tp=(tr<=0?0:(tr==1?5:(tr<20?tr*5-5:100)));
+                    final double fa=aa,fr=rr,ft=tp;
+                    runOnUiThread(()->{
+                        afr.setText(df.format(fa)); rpm.setText(String.valueOf((int)fr)); tpsIn.setText(df.format(ft));
+                        selectedX=cellRpm(fr); selectedY=cellTps(ft);
+                        live.setText("LIVE A603 • AFR "+df.format(fa)+" • RPM "+(int)fr+" • TPS "+df.format(ft)+"% • BAT "+df.format(ba)+"V • EOT "+df.format(eo)+"°C • IAT "+df.format(ia)+"°C • BASE "+df.format(bm)+" • INJ "+df.format(inj)+"° • IGN "+df.format(ig)+"°");
+                        if(tuning)applySample(); else {updateSelection();renderTable();}
+                    });
+                    return;
+                }
+            }
             Double a=null,r=null,t=null;
             for(String p:s.split("[,; ]")){
                 String[] q=p.split("=");
@@ -362,14 +383,55 @@ public class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("DIAG / SENSOR").setMessage(text).setPositiveButton("OK",null).show();
     }
     void showEcuTools(){
-        String[] actions={"GET MAP ECU → HP","SEND MAP HP → ECU","GET FUEL","GET BASE MAP","GET IGNITION","GET INJECTOR TIMING","BACKUP ECU","RESTORE ECU","IDENTIFY ECU / VERSION"};
+        String[] actions={"GET FUEL MAP (ECU→HP)","SEND FUEL MAP (HP→ECU)","GET BASE MAP","GET IGNITION MAP","GET INJECTOR TIMING","IDENTIFY ECU / VERSION","LIVE START 160A","LIVE STOP 160B"};
         new AlertDialog.Builder(this).setTitle("ECU TOOLS").setItems(actions,(d,w)->{
-            if(w==8) status.setText("IDENTIFY ECU: menunggu handshake/protokol Juken 5 terverifikasi.");
-            else if(w==0) status.setText("GET MAP belum diaktifkan: frame read/ACK Juken 5 belum terverifikasi.");
-            else if(w==1) status.setText("SEND MAP belum diaktifkan: frame write/ACK/read-back Juken 5 belum terverifikasi.");
-            else status.setText("Fungsi "+actions[w]+" disiapkan; transfer ECU menunggu protokol terverifikasi.");
+            if(w==0) readFuelMap();
+            else if(w==1) confirmSendFuelMap();
+            else if(w==5) { if(output!=null) try{output.write("1616\\r\\n".getBytes(StandardCharsets.US_ASCII));output.flush();}catch(Exception ignored){} status.setText("Meminta identitas ECU (1616)."); }
+            else if(w==6) sendRaw("160A");
+            else if(w==7) sendRaw("160B");
+            else status.setText(actions[w]+" tersedia; parser/map khusus sedang dipersiapkan.");
         }).show();
     }
+    void sendRaw(String cmd){
+        if(output==null){status.setText("Belum terhubung Bluetooth.");return;}
+        try{String p=cmd+"\\r\\n";output.write(p.getBytes(StandardCharsets.US_ASCII));output.flush();logPacket("TX",p);status.setText("TX "+cmd+" terkirim.");}catch(Exception e){status.setText("TX gagal: "+e.getMessage());}
+    }
+    void readFuelMap(){
+        if(output==null){status.setText("Belum terhubung Bluetooth.");return;}
+        readingFuel=true; readRow=0; status.setText("GET FUEL MAP dimulai…");
+        requestFuelRow();
+    }
+    void requestFuelRow(){
+        if(!readingFuel)return;
+        try{String p="1602;2;"+readRow+"\\r\\n";output.write(p.getBytes(StandardCharsets.US_ASCII));output.flush();logPacket("TX",p);}catch(Exception e){readingFuel=false;status.setText("GET MAP gagal: "+e.getMessage());}
+    }
+    void handleFuelRead(String s){
+        if(!readingFuel || !s.startsWith("9602;")) return;
+        String[] a=s.substring(5).split(";");
+        for(int x=0;x<RPM_CELLS&&x<a.length;x++) try{map[readRow][x]=Double.parseDouble(a[x]);}catch(Exception ignored){}
+        final int done=readRow+1; readRow++;
+        runOnUiThread(()->{renderTable();updateStats();status.setText("GET FUEL MAP "+done+"/"+TPS_CELLS+" row.");});
+        if(readRow<TPS_CELLS) new Handler(Looper.getMainLooper()).postDelayed(this::requestFuelRow,80);
+        else {readingFuel=false;runOnUiThread(()->{saveMap();status.setText("GET FUEL MAP selesai dari ECU.");});}
+    }
+    void confirmSendFuelMap(){
+        if(output==null){status.setText("Belum terhubung Bluetooth.");return;}
+        new AlertDialog.Builder(this).setTitle("SEND FUEL MAP ke ECU?")
+          .setMessage("Akan mengirim 21 baris × 61 nilai menggunakan pola 2602;2;row;... yang didokumentasikan oleh proyek reverse-engineering publik. Lakukan hanya pada ECU yang siap diuji; verifikasi GET MAP/read-back setelahnya.")
+          .setNegativeButton("BATAL",null).setPositiveButton("KIRIM",(d,w)->sendFuelRows(0)).show();
+    }
+    void sendFuelRows(int row){
+        if(row>=TPS_CELLS){status.setText("SEND FUEL selesai. Lakukan GET MAP untuk verifikasi read-back.");return;}
+        try{
+            StringBuilder p=new StringBuilder("2602;2;").append(row);
+            for(int x=0;x<RPM_CELLS;x++)p.append(';').append(df.format(map[row][x]));
+            p.append("\\r\\n"); output.write(p.toString().getBytes(StandardCharsets.US_ASCII));output.flush();logPacket("TX",p.toString());
+            final int next=row+1;status.setText("SEND FUEL "+next+"/"+TPS_CELLS+"…");
+            new Handler(Looper.getMainLooper()).postDelayed(()->sendFuelRows(next),100);
+        }catch(Exception e){status.setText("SEND FUEL gagal pada row "+row+": "+e.getMessage());}
+    }
+
     void showProjectTools(){
         String[] actions={"SAVE PROJECT","NEW PROJECT","DUPLICATE MAP","FACTORY DEFAULT LOCAL","MAKE PATTERN","AUTO CALCULATION","EXPORT FULL PROJECT"};
         new AlertDialog.Builder(this).setTitle("PROJECT / MAP TOOLS").setItems(actions,(d,w)->{
