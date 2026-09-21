@@ -26,6 +26,8 @@ public class MainActivity extends Activity {
     TextView status,live,selection,stats;
     TableLayout table;
     boolean tuning=false;
+    long lastAutoApply=0;
+    double afrSum=0; int afrCount=0; int stableX=-1, stableY=-1;
     BluetoothSocket socket;
     InputStream input;
     OutputStream output;
@@ -41,7 +43,7 @@ public class MainActivity extends Activity {
         selection=findViewById(R.id.selection); stats=findViewById(R.id.stats); table=findViewById(R.id.mapTable);
         initAxes(); loadMap(); updateSelection(); renderTable();
 
-        findViewById(R.id.autoTuneStart).setOnClickListener(v->{tuning=true; status.setText("AUTO TUNE AKTIF — koreksi map lokal.");});
+        findViewById(R.id.autoTuneStart).setOnClickListener(v->{tuning=true; afrSum=0; afrCount=0; lastAutoApply=0; status.setText("AUTO TUNE AKTIF — 5-sample averaging, 1s/cell.");});
         findViewById(R.id.autoTuneStop).setOnClickListener(v->{tuning=false; status.setText("AUTO TUNE berhenti.");});
         findViewById(R.id.applyCell).setOnClickListener(v->applySample());
         findViewById(R.id.reset).setOnClickListener(v->confirmReset());
@@ -84,6 +86,14 @@ public class MainActivity extends Activity {
 
     void applySample(){
         double a=num(afr,14.7), ta=num(target,13.8), g=Math.max(0,Math.min(1,num(gain,.5)));
+        if(tuning){
+            long now=System.currentTimeMillis();
+            int sx=cellRpm(num(rpm,3000)), sy=cellTps(num(tpsIn,20));
+            if(sx!=stableX || sy!=stableY){ stableX=sx; stableY=sy; afrSum=0; afrCount=0; }
+            afrSum+=a; afrCount++;
+            if(afrCount<5 || now-lastAutoApply<1000){ live.setText("AUTO TUNE sampling "+afrCount+"/5 • AFR "+df.format(a)); return; }
+            a=afrSum/afrCount; afrSum=0; afrCount=0; lastAutoApply=now;
+        }
         double db=Math.max(0,num(deadband,.15)), max=Math.max(.1,num(maxcorr,5));
         int x=cellRpm(num(rpm,3000)), y=cellTps(num(tpsIn,20));
         selectedX=x; selectedY=y;
