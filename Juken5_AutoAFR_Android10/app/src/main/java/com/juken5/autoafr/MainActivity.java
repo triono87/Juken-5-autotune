@@ -25,6 +25,7 @@ public class MainActivity extends Activity {
     EditText rpm,tpsIn,afr,target,gain,deadband,maxcorr;
     TextView status,live,selection,stats;
     StringBuilder packetLog=new StringBuilder();
+    final ArrayDeque<String> undoHistory=new ArrayDeque<>();
     TableLayout table;
     boolean tuning=false;
     long lastAutoApply=0;
@@ -59,6 +60,7 @@ public class MainActivity extends Activity {
         findViewById(R.id.backup).setOnClickListener(v->backupMap());
         findViewById(R.id.restore).setOnClickListener(v->restoreMap());
         findViewById(R.id.packetLog).setOnClickListener(v->showPacketLog());
+        findViewById(R.id.undo).setOnClickListener(v->undoLast());
 
         View.OnFocusChangeListener f=(v,has)->{if(!has) updateSelection();};
         rpm.setOnFocusChangeListener(f); tpsIn.setOnFocusChangeListener(f);
@@ -88,6 +90,15 @@ public class MainActivity extends Activity {
         selection.setText("CELL: TPS "+df.format(tps[selectedY])+"% / RPM "+rpms[selectedX]+"  •  MAP "+df.format(map[selectedY][selectedX])+"%");
     }
 
+    void pushUndo(int y,int x,double oldValue){
+        undoHistory.addLast(y+":"+x+":"+oldValue);
+        while(undoHistory.size()>50) undoHistory.removeFirst();
+    }
+    void undoLast(){
+        if(undoHistory.isEmpty()){status.setText("Belum ada koreksi untuk di-UNDO.");return;}
+        String[] q=undoHistory.removeLast().split(":"); int y=Integer.parseInt(q[0]),x=Integer.parseInt(q[1]); map[y][x]=Double.parseDouble(q[2]);
+        saveMap(); renderTable(); updateSelection(); updateStats(); status.setText("Koreksi terakhir dibatalkan: TPS "+df.format(tps[y])+" / "+rpms[x]+" RPM.");
+    }
     void applySample(){
         double a=num(afr,14.7), ta=num(target,13.8), g=Math.max(0,Math.min(1,num(gain,.5)));
         if(tuning){
@@ -105,7 +116,9 @@ public class MainActivity extends Activity {
         if(Math.abs(err)<db){status.setText("AFR dalam deadband — koreksi 0%.");return;}
         double corr=(ta>0?err/ta*100:0)*g;
         corr=Math.max(-max,Math.min(max,corr));
+        double oldValue=map[y][x];
         map[y][x]=Math.max(50,Math.min(150,map[y][x]*(1+corr/100)));
+        pushUndo(y,x,oldValue);
         samples[y][x]++;
         live.setText("LIVE AFR "+df.format(a)+"  TARGET "+df.format(ta)+"  CORR "+df.format(corr)+"%");
         status.setText("Cell TPS "+df.format(tps[y])+" / "+rpms[x]+" → "+df.format(map[y][x])+"%");
