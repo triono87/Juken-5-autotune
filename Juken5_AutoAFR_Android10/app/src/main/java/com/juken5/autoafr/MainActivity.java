@@ -214,7 +214,7 @@ public class MainActivity extends Activity {
     void openMap(){startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("text/*").addCategory(Intent.CATEGORY_OPENABLE),20);}
     @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
         super.onActivityResult(requestCode,resultCode,data);
-        if(requestCode==20&&resultCode==RESULT_OK&&data!=null)importCsv(data.getData());
+        if(resultCode==RESULT_OK&&data!=null){ if(requestCode==20) importCsv(data.getData()); else if(requestCode==21) saveMapToUri(data.getData()); }
     }
     void importCsv(Uri uri){
         try{
@@ -238,8 +238,6 @@ public class MainActivity extends Activity {
             o.write(s.toString().getBytes(StandardCharsets.UTF_8));o.close();status.setText("MAP CSV berhasil diekspor.");
         }catch(Exception e){status.setText("Export gagal: "+e.getMessage());}
     }
-    @Override protected void onActivityResultOld(int requestCode,int resultCode,Intent data){}
-
     @Override protected void onDestroy(){disconnect();super.onDestroy();}
     void disconnect(){try{if(socket!=null)socket.close();}catch(Exception ignored){}socket=null;input=null;output=null;tuning=false;status.setText("Bluetooth terputus.");}
 }
