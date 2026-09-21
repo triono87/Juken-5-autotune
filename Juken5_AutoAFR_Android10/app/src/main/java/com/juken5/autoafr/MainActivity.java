@@ -97,7 +97,11 @@ public class MainActivity extends Activity {
     }
 
     int cellRpm(double r){return Math.max(0,Math.min(RPM_CELLS-1,(int)Math.round(r/250.0)));}
-    int cellTps(double t){\n        int best=0; double bd=Math.abs(t-tpsBp[0]);\n        for(int i=1;i<TPS_CELLS;i++){ double d=Math.abs(t-tpsBp[i]); if(d<bd){bd=d;best=i;} }\n        return best;\n    }
+    int cellTps(double t){
+        int best=0; double bd=Math.abs(t-tpsBp[0]);
+        for(int i=1;i<TPS_CELLS;i++){ double d=Math.abs(t-tpsBp[i]); if(d<bd){bd=d;best=i;} }
+        return best;
+    }
     double num(EditText e,double d){try{return Double.parseDouble(e.getText().toString().replace(',','.'));}catch(Exception x){return d;}}
     void updateSelection(){
         double r=num(rpm,3000), t=num(tpsIn,20); selectedX=cellRpm(r); selectedY=cellTps(t);
