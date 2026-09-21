@@ -81,7 +81,7 @@ public class MainActivity extends Activity {
         updateStats();
     }
 
-    void initAxes(){for(int i=0;i<RPM_CELLS;i++)rpms[i]=i*250;for(int i=0;i<TPS_CELLS;i++)tps[i]=tpsBp[i];}
+    void initAxes(){for(int i=0;i<RPM_CELLS;i++)rpms[i]=(i<60?i*250:16000);for(int i=0;i<TPS_CELLS;i++)tps[i]=tpsBp[i];}
 
     void defaultMap(){for(int y=0;y<TPS_CELLS;y++)for(int x=0;x<RPM_CELLS;x++){map[y][x]=100; samples[y][x]=0;}}
     void loadMap(){
@@ -96,7 +96,7 @@ public class MainActivity extends Activity {
         e.apply(); status.setText("MAP tersimpan di HP."); updateStats();
     }
 
-    int cellRpm(double r){return Math.max(0,Math.min(RPM_CELLS-1,(int)Math.round(r/250.0)));}
+    int cellRpm(double r){if(r>=15000)return 60;return Math.max(0,Math.min(59,(int)Math.round(r/250.0)));}
     int cellTps(double t){
         int best=0; double bd=Math.abs(t-tpsBp[0]);
         for(int i=1;i<TPS_CELLS;i++){ double d=Math.abs(t-tpsBp[i]); if(d<bd){bd=d;best=i;} }
@@ -147,7 +147,7 @@ public class MainActivity extends Activity {
 
     void logAutoCorrection(int y,int x,double actual,double targetAfr,double err,double corr,double oldValue,double newValue){
         String line=new java.text.SimpleDateFormat("HH:mm:ss",Locale.US).format(new Date())
-            + ","+df.format(tps[y])+","+rpms[x]+","+df.format(actual)+","+df.format(targetAfr)+","+df.format(err)+","+df.format(corr)+","+df.format(oldValue)+","+df.format(newValue)+"\\n";
+            + ","+df.format(tps[y])+","+rpms[x]+","+df.format(actual)+","+df.format(targetAfr)+","+df.format(err)+","+df.format(corr)+","+df.format(oldValue)+","+df.format(newValue)+"\n";
         if(autoHistory.length()==0) autoHistory.append("TIME,TPS,RPM,AFR,TARGET,ERROR,CORR,OLD_MAP,NEW_MAP\\n");
         autoHistory.append(line);
         if(autoHistory.length()>20000) autoHistory.delete(0,autoHistory.length()-20000);
@@ -224,7 +224,7 @@ public class MainActivity extends Activity {
                 socket=d.createRfcommSocketToServiceRecord(UUID.fromString(SPP));socket.connect();
                 input=socket.getInputStream();output=socket.getOutputStream();
                 runOnUiThread(()->status.setText("Bluetooth TERHUBUNG: "+d.getName()));
-                try{output.write("160A\\r\\n".getBytes(StandardCharsets.US_ASCII));output.flush();logPacket("TX","160A\\r\\n");}catch(Exception ignored){}
+                try{output.write("160A\r\n".getBytes(StandardCharsets.US_ASCII));output.flush();logPacket("TX","160A\\r\\n");}catch(Exception ignored){}
                 rx=new Thread(this::readLoop);rx.start();
             }catch(Exception e){runOnUiThread(()->status.setText("Gagal Bluetooth: "+e.getMessage()));}
         }).start();
@@ -391,7 +391,7 @@ public class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("ECU TOOLS").setItems(actions,(d,w)->{
             if(w==0) readFuelMap();
             else if(w==1) confirmSendFuelMap();
-            else if(w==5) { if(output!=null) try{output.write("1616\\r\\n".getBytes(StandardCharsets.US_ASCII));output.flush();}catch(Exception ignored){} status.setText("Meminta identitas ECU (1616)."); }
+            else if(w==5) { if(output!=null) try{output.write("1616\r\n".getBytes(StandardCharsets.US_ASCII));output.flush();}catch(Exception ignored){} status.setText("Meminta identitas ECU (1616)."); }
             else if(w==6) sendRaw("160A");
             else if(w==7) sendRaw("160B");
             else status.setText(actions[w]+" tersedia; parser/map khusus sedang dipersiapkan.");
@@ -399,7 +399,7 @@ public class MainActivity extends Activity {
     }
     void sendRaw(String cmd){
         if(output==null){status.setText("Belum terhubung Bluetooth.");return;}
-        try{String p=cmd+"\\r\\n";output.write(p.getBytes(StandardCharsets.US_ASCII));output.flush();logPacket("TX",p);status.setText("TX "+cmd+" terkirim.");}catch(Exception e){status.setText("TX gagal: "+e.getMessage());}
+        try{String p=cmd+"\r\n";output.write(p.getBytes(StandardCharsets.US_ASCII));output.flush();logPacket("TX",p);status.setText("TX "+cmd+" terkirim.");}catch(Exception e){status.setText("TX gagal: "+e.getMessage());}
     }
     void readFuelMap(){
         if(output==null){status.setText("Belum terhubung Bluetooth.");return;}
@@ -408,7 +408,7 @@ public class MainActivity extends Activity {
     }
     void requestFuelRow(){
         if(!readingFuel)return;
-        try{String p="1602;2;"+readRow+"\\r\\n";output.write(p.getBytes(StandardCharsets.US_ASCII));output.flush();logPacket("TX",p);}catch(Exception e){readingFuel=false;status.setText("GET MAP gagal: "+e.getMessage());}
+        try{String p="1602;2;"+readRow+"\r\n";output.write(p.getBytes(StandardCharsets.US_ASCII));output.flush();logPacket("TX",p);}catch(Exception e){readingFuel=false;status.setText("GET MAP gagal: "+e.getMessage());}
     }
     void handleFuelRead(String s){
         if(!readingFuel || !s.startsWith("9602;")) return;
@@ -430,7 +430,7 @@ public class MainActivity extends Activity {
         try{
             StringBuilder p=new StringBuilder("2602;2;").append(row);
             for(int x=0;x<RPM_CELLS;x++)p.append(';').append(df.format(map[row][x]));
-            p.append("\\r\\n"); output.write(p.toString().getBytes(StandardCharsets.US_ASCII));output.flush();logPacket("TX",p.toString());
+            p.append("\r\n"); output.write(p.toString().getBytes(StandardCharsets.US_ASCII));output.flush();logPacket("TX",p.toString());
             final int next=row+1;status.setText("SEND FUEL "+next+"/"+TPS_CELLS+"…");
             new Handler(Looper.getMainLooper()).postDelayed(()->sendFuelRows(next),100);
         }catch(Exception e){status.setText("SEND FUEL gagal pada row "+row+": "+e.getMessage());}
