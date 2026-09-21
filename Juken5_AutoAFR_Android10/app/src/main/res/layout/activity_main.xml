@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
-<LinearLayout android:orientation="vertical" android:padding="8dp" android:layout_width="match_parent" android:layout_height="wrap_content">
+<LinearLayout android:orientation="vertical" android:padding="6dp" android:layout_width="match_parent" android:layout_height="wrap_content">
 <TextView android:text="JUKEN 5 — TARGET AFR AUTOTUNE" android:textSize="20sp" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-<TextView android:text="21 TPS × 61 RPM • Bluetooth SPP • Target AFR • 2602 packet preview" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<TextView android:text="21 TPS × 61 RPM • editor cell • Bluetooth SPP • Auto Tune • Import/Export" android:layout_width="match_parent" android:layout_height="wrap_content"/>
 <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
 <EditText android:id="@+id/rpm" android:hint="RPM" android:inputType="number" android:text="3000" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 <EditText android:id="@+id/tps" android:hint="TPS %" android:inputType="numberDecimal" android:text="20" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
@@ -11,24 +11,33 @@
 </LinearLayout>
 <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
 <EditText android:id="@+id/gain" android:hint="Gain" android:inputType="numberDecimal" android:text="0.50" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
-<EditText android:id="@+id/deadband" android:hint="Deadband AFR" android:inputType="numberDecimal" android:text="0.15" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<EditText android:id="@+id/deadband" android:hint="Deadband" android:inputType="numberDecimal" android:text="0.15" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 <EditText android:id="@+id/maxcorr" android:hint="Max corr %" android:inputType="numberDecimal" android:text="5" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 </LinearLayout>
-<TextView android:id="@+id/selection" android:text="Sel: TPS 20% / 3000 rpm" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<TextView android:id="@+id/selection" android:text="CELL: TPS 20% / RPM 3000" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<TextView android:id="@+id/stats" android:text="MAP 21×61" android:layout_width="match_parent" android:layout_height="wrap_content"/>
 <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
 <Button android:id="@+id/autoTuneStart" android:text="START AUTO TUNE" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 <Button android:id="@+id/autoTuneStop" android:text="STOP" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
 <Button android:id="@+id/applyCell" android:text="APPLY CELL" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
 <Button android:id="@+id/reset" android:text="RESET" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
 </LinearLayout>
-<Spinner android:id="@+id/deviceSpinner" android:layout_width="match_parent" android:layout_height="wrap_content"/>
 <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
-<Button android:id="@+id/connect" android:text="CONNECT" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id/connect" android:text="CONNECT BT" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 <Button android:id="@+id/disconnect" android:text="DISCONNECT" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
-<Button android:id="@+id/preview2602" android:text="PREVIEW 2602" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
-<Button android:id="@+id/export" android:text="EXPORT MAP" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id/packet" android:text="2602 PREVIEW" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id/sendTest" android:text="2602 TEST" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
 </LinearLayout>
-<TextView android:id="@+id/status" android:text="Bluetooth belum terhubung. Auto Tune mengubah MAP lokal." android:layout_width="match_parent" android:layout_height="wrap_content"/>
-<TextView android:id="@+id/live" android:text="LIVE AFR: -" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-<HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content"><TableLayout android:id="@+id/mapTable" android:layout_width="wrap_content" android:layout_height="wrap_content"/></HorizontalScrollView>
+<LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
+<Button android:id="@+id/save" android:text="SAVE MAP" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id/load" android:text="IMPORT CSV" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id/importMap" android:text="IMPORT CSV" android:visibility="gone" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<Button android:id="@+id/export" android:text="EXPORT CSV" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+</LinearLayout>
+<TextView android:id="@+id/status" android:text="Bluetooth belum terhubung." android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<TextView android:id="@+id/live" android:text="LIVE AFR: -" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content">
+<TableLayout android:id="@+id/mapTable" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+</HorizontalScrollView>
+<TextView android:text="Catatan: 2602 mengikuti struktur bytecode yang tersedia. WRITE ECU final belum diaktifkan sampai argumen/index dan ACK/read-back Juken 5 terverifikasi." android:textSize="11sp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
 </LinearLayout></ScrollView>
