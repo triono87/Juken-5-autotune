@@ -24,6 +24,7 @@ public class MainActivity extends Activity {
 
     EditText rpm,tpsIn,afr,target,gain,deadband,maxcorr;
     TextView status,live,selection,stats;
+    StringBuilder packetLog=new StringBuilder();
     TableLayout table;
     boolean tuning=false;
     long lastAutoApply=0;
@@ -55,6 +56,9 @@ public class MainActivity extends Activity {
         findViewById(R.id.importMap).setOnClickListener(v->openMap());
         findViewById(R.id.packet).setOnClickListener(v->showPacket());
         findViewById(R.id.sendTest).setOnClickListener(v->send2602Test());
+        findViewById(R.id.backup).setOnClickListener(v->backupMap());
+        findViewById(R.id.restore).setOnClickListener(v->restoreMap());
+        findViewById(R.id.packetLog).setOnClickListener(v->showPacketLog());
 
         View.OnFocusChangeListener f=(v,has)->{if(!has) updateSelection();};
         rpm.setOnFocusChangeListener(f); tpsIn.setOnFocusChangeListener(f);
@@ -172,7 +176,7 @@ public class MainActivity extends Activity {
         byte[] buf=new byte[2048];StringBuilder sb=new StringBuilder();
         try{
             int n;while(socket!=null&&socket.isConnected()&&(n=input.read(buf))!=-1){
-                String s=new String(buf,0,n,StandardCharsets.US_ASCII);sb.append(s);
+                String s=new String(buf,0,n,StandardCharsets.US_ASCII); logPacket("RX",s); sb.append(s);
                 int p;while((p=sb.indexOf("\n"))>=0){String line=sb.substring(0,p).replace("\r","").trim();sb.delete(0,p+1);if(!line.isEmpty())parseTelemetry(line);}
             }
         }catch(Exception ignored){}
@@ -210,8 +214,37 @@ public class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("Kirim 2602?")
             .setMessage("Ini hanya TEST packet dari struktur bytecode yang ditemukan. Jangan gunakan sebagai WRITE ECU final sebelum argument/index/ACK Juken terverifikasi.")
             .setNegativeButton("Batal",null).setPositiveButton("KIRIM",(d,w)->{
-                try{output.write(build2602().getBytes(StandardCharsets.US_ASCII));output.flush();status.setText("2602 TEST terkirim — belum dianggap WRITE MAP.");}
+                try{String pkt=build2602(); logPacket("TX",pkt); output.write(pkt.getBytes(StandardCharsets.US_ASCII));output.flush();status.setText("2602 TEST terkirim — belum dianggap WRITE MAP.");}
                 catch(Exception e){status.setText("Kirim gagal: "+e.getMessage());}
+            }).show();
+    }
+
+    void logPacket(String dir,String data){
+        String clean=data.replace("\\r","\\\\r").replace("\\n","\\\\n");
+        if(clean.length()>600) clean=clean.substring(0,600)+"…";
+        String line=new java.text.SimpleDateFormat("HH:mm:ss.SSS",Locale.US).format(new Date())+"  "+dir+"  "+clean+"\\n";
+        packetLog.append(line);
+        if(packetLog.length()>12000) packetLog.delete(0,packetLog.length()-12000);
+    }
+    void showPacketLog(){
+        TextView v=new TextView(this); v.setText(packetLog.length()==0?"Belum ada data Bluetooth.":packetLog.toString());
+        v.setTextIsSelectable(true); v.setTextSize(11); v.setPadding(12,12,12,12);
+        new AlertDialog.Builder(this).setTitle("BLUETOOTH PACKET MONITOR").setView(v)
+            .setNegativeButton("TUTUP",null).setNeutralButton("CLEAR",(d,w)->{packetLog.setLength(0);status.setText("Packet log dihapus.");}).show();
+    }
+    void backupMap(){
+        android.content.SharedPreferences p=getSharedPreferences(PREFS,0);
+        android.content.SharedPreferences.Editor e=getSharedPreferences(PREFS+"_backup",0).edit().clear().putBoolean("found",true);
+        for(int y=0;y<TPS_CELLS;y++)for(int x=0;x<RPM_CELLS;x++)e.putLong("m_"+y+"_"+x,p.getLong("m_"+y+"_"+x,Double.doubleToLongBits(100)));
+        e.putLong("time",System.currentTimeMillis()).apply(); status.setText("BACKUP MAP tersimpan.");
+    }
+    void restoreMap(){
+        android.content.SharedPreferences p=getSharedPreferences(PREFS+"_backup",0);
+        if(!p.getBoolean("found",false)){status.setText("Belum ada backup MAP.");return;}
+        new AlertDialog.Builder(this).setTitle("Restore backup MAP?").setMessage("MAP saat ini akan diganti dengan backup terakhir.")
+            .setNegativeButton("Batal",null).setPositiveButton("RESTORE",(d,w)->{
+                for(int y=0;y<TPS_CELLS;y++)for(int x=0;x<RPM_CELLS;x++)map[y][x]=Double.longBitsToDouble(p.getLong("m_"+y+"_"+x,Double.doubleToLongBits(100)));
+                saveMap();renderTable();updateSelection();updateStats();status.setText("MAP berhasil di-restore dari backup.");
             }).show();
     }
 
