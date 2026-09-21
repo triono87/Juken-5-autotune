@@ -6,7 +6,7 @@ android {
         applicationId 'com.juken5.autoafr'
         minSdk 23
         targetSdk 28
-        versionCode 7
-        versionName '7.0-target-afr'
+        versionCode 8
+        versionName '8.0-juken5-complete'
     }
 }
