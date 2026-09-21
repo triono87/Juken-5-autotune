@@ -230,7 +230,7 @@ public class MainActivity extends Activity {
         try{
             int n;while(socket!=null&&socket.isConnected()&&(n=input.read(buf))!=-1){
                 String s=new String(buf,0,n,StandardCharsets.US_ASCII); logPacket("RX",s); sb.append(s);
-                int p;while((p=sb.indexOf("\n"))>=0){String line=sb.substring(0,p).replace("\r","").trim();sb.delete(0,p+1);if(!line.isEmpty())parseTelemetry(line);}
+                int p;while((p=sb.indexOf("\n"))>=0){String line=sb.substring(0,p).replace("\r","").trim();sb.delete(0,p+1);if(!line.isEmpty()){logPacket("RX",line);handleFuelRead(line);parseTelemetry(line);}}
             }
         }catch(Exception ignored){}
     }
